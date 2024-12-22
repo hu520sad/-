@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./Python_front  # 设置前端项目的路径
+    ports:
+      - "3000:5173"  # 前端项目暴露的端口
+    volumes:
+      - ./Python_front:/app
+    working_dir: /app
+    command: npm run dev -- --host  # 让 Vite 在所有网络接口上监听
+    environment:
+      - NODE_ENV=development
+    networks:
+      - front_page_frontend_backend_network  # 修改为实际的网络名称
+
+  backend:
+    build:
+      context: ./实习僧  # 设置后端项目的路径
+    ports:
+      - "5000:5000"  # 后端项目暴露的端口
+    volumes:
+      - ./实习僧:/app
+    working_dir: /app
+    command: python3 server.py
+    environment:
+      - FLASK_ENV=development
+      - MYSQL_HOST=mysql  # 后端依赖数据库
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=123456!  # 配置正确的密码
+      - MYSQL_DB=recruit_db
+    depends_on:
+      - mysql  # 后端依赖数据库
+    networks:
+      - front_page_frontend_backend_network  # 修改为实际的网络名称
+
+  mysql:
+    image: mysql:8.0  # 使用官方 MySQL 镜像
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456!  # 配置 MySQL root 密码
+      MYSQL_DATABASE: recruit_db  # 初始化数据库名称
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"  # 映射 MySQL 服务的端口
+    networks:
+      - front_page_frontend_backend_network  # 修改为实际的网络名称
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
+
+volumes:
+  mysql-data:
+    driver: local
+
+networks:
+  front_page_frontend_backend_network:
+    driver: bridge
